@@ -1,0 +1,7 @@
+{
+  "name": "Zhi Viomi Washer",
+  "domains": ["fan"],
+  "country": ["CN"],
+  "render_readme": true,
+  "iot_class": "Local Polling"
+}

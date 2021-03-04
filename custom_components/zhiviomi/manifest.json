@@ -1,0 +1,8 @@
+{
+	"domain": "zhiviomi",
+	"name": "Zhi VioMi Washer",
+	"documentation": "https://github.com/Yonsm/ZhiViomi",
+	"requirements": ["python-miio>=0.5.3"],
+	"dependencies": [],
+	"codeowners": ["@Yonsm"]
+}
