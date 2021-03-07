@@ -1,4 +1,4 @@
-# ZhiViomi
+# [https://github.com/Yonsm/ZhiViomi](https://github.com/Yonsm/ZhiViomi)
 
 VoiMi Washer Component for HomeAssistant
 
@@ -12,7 +12,7 @@ _依赖 [python-miio](https://github.com/rytilahti/python-miio)，运行时自�
 
 ## 2. 配置方法
 
-参见[我的 Home Assistant 配置](https://github.com/Yonsm/.homeassistant)中 [configuration.yaml](https://github.com/Yonsm/.homeassistant/blob/main/configuration.yaml)
+参见 [我的 Home Assistant 配置](https://github.com/Yonsm/.homeassistant) 中 [configuration.yaml](https://github.com/Yonsm/.homeassistant/blob/main/configuration.yaml)
 
 ```
 fan:
@@ -26,7 +26,7 @@ _如何获取 `token`？_ 参见 [MiService](https://github.com/Yonsm/MiService)
 
 ## 3. 使用方式
 
-![PREVIEW](PREVIEW.png)
+![PREVIEW](https://github.com/Yonsm/ZhiViomi/blob/main/PREVIEW.png)
 
 如图，其中`方向`表示预约洗衣，默认时间为 `8` 点钟完成。如需修改请直接改 [fan.py](https://github.com/Yonsm/ZhiViomi/blob/main/custom_components/zhiviomi/fan.py) 中的 `DEFAULT_APPOINT_TIME = -8`，如 `-8` 表示 8 点钟，`8` 表示 8 小时后。
 
