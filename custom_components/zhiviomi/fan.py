@@ -80,8 +80,7 @@ class VioMiWasher(FanEntity, RestoreEntity):
     def __init__(self, name, host, token):
         self._name = name or host
         self._device = Device(host, token)
-        self._status = {'dash_extra_forced': True,
-                        'genie_deviceType': 'washmachine'}
+        self._status = {'dash_extra_forced': True}
         self._state = None
         self._skip_update = False
         self._dry_mode = 0
