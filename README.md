@@ -34,7 +34,7 @@ _如何获取 `token`？_ 参见 [MiService](https://github.com/Yonsm/MiService)
 
 ## 4. 参考
 
--   [ZhiDash](https://github.com/Yonsm/ZhiDash)
--   [Yonsm.NET](https://yonsm.github.io)
--   [Hassbian.com](https://bbs.hassbian.com/thread-12335-1-1.html)
--   [Yonsm's .homeassistant](https://github.com/Yonsm/.homeassistant)
+- [ZhiDash](https://github.com/Yonsm/ZhiDash)
+- [Yonsm.NET](https://yonsm.github.io)
+- [Hassbian.com](https://bbs.hassbian.com/thread-12335-1-1.html)
+- [Yonsm's .homeassistant](https://github.com/Yonsm/.homeassistant)
