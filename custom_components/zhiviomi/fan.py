@@ -16,8 +16,8 @@ _LOGGER = logging.getLogger(__name__)
 
 APPOINT_MIN = 1  # 3 in app default
 APPOINT_MAX = 23  # 19 in app default
-DEFAULT_DRY_MODE = 30721 # 
-DEFAULT_APPOINT_TIME = -8 # -8 means 8 o'clock, 8 means 8 hours later
+DEFAULT_DRY_MODE = 30721
+DEFAULT_APPOINT_TIME = -8  # -8 means 8 o'clock, 8 means 8 hours later
 
 WASHER_PROPS = [
     "program",
@@ -72,10 +72,10 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     host = config[CONF_HOST]
     token = config[CONF_TOKEN]
     name = config.get(CONF_NAME)
-    add_entities([VioMiWasher(name, host, token)], True)
+    add_entities([ZhiVioMiWasher(name, host, token)], True)
 
 
-class VioMiWasher(FanEntity, RestoreEntity):
+class ZhiVioMiWasher(FanEntity, RestoreEntity):
 
     def __init__(self, name, host, token):
         self._name = name or host
@@ -86,14 +86,10 @@ class VioMiWasher(FanEntity, RestoreEntity):
         self._dry_mode = 0
         self._appoint_time = 0
 
-    async def async_added_to_hass(self):
-        await super().async_added_to_hass()
-        last_state = await self.async_get_last_state()
-        _LOGGER.debug("async_added_to_hass: %s", last_state)
-        if last_state:
-            self._appoint_time = int(last_state.attributes.get('direction') == 'reverse')
-            self._dry_mode = int(last_state.attributes.get('oscillating', 0))
-            _LOGGER.debug("Restore state: dry_mode=%s, appoint_time=%s", self._dry_mode, self._appoint_time)
+    @property
+    def unique_id(self):
+        from homeassistant.util import slugify
+        return self.__class__.__name__.lower() + '.' + slugify(self.name)
 
     @property
     def supported_features(self):
@@ -268,3 +264,12 @@ class VioMiWasher(FanEntity, RestoreEntity):
             self._skip_update = True
             return True
         return False
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        last_state = await self.async_get_last_state()
+        _LOGGER.debug("async_added_to_hass: %s", last_state)
+        if last_state:
+            self._appoint_time = int(last_state.attributes.get('direction') == 'reverse')
+            self._dry_mode = int(last_state.attributes.get('oscillating', 0))
+            _LOGGER.debug("Restore state: dry_mode=%s, appoint_time=%s", self._dry_mode, self._appoint_time)
