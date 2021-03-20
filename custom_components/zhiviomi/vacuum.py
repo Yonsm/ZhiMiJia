@@ -126,7 +126,7 @@ class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
 
     def update_status(self, status):
         self._status = status
-        self.skip_update = True
+        self.skip_poll = True
         self.schedule_update_ha_state()
 
     @property
