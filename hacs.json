@@ -1,6 +1,6 @@
 {
   "name": "Zhi Viomi Washer",
-  "domains": ["fan"],
+  "domains": ["vacuum"],
   "country": ["CN"],
   "render_readme": true,
   "iot_class": "Local Polling"

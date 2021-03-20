@@ -2,8 +2,8 @@
 	"domain": "zhiviomi",
 	"name": "Zhi VioMi Washer",
 	"documentation": "https://github.com/Yonsm/ZhiViomi",
-	"version": "1.0.1",
+	"version": "2.0.0",
 	"requirements": ["python-miio>=0.5.3"],
-	"dependencies": [],
+	"dependencies": ["zhimi"],
 	"codeowners": ["@Yonsm"]
 }
