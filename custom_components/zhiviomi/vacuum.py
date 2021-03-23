@@ -1,6 +1,6 @@
 from .viomi_washer_v5 import *
 from ..zhimi import miio_service
-from .entity import ZhiPollEntity
+from ..zhi.entity import ZhiPollEntity
 
 from homeassistant.components.vacuum import PLATFORM_SCHEMA, SUPPORT_CLEAN_SPOT, SUPPORT_FAN_SPEED, SUPPORT_LOCATE, SUPPORT_PAUSE, SUPPORT_RETURN_HOME, SUPPORT_SEND_COMMAND, SUPPORT_START, SUPPORT_STATUS, SUPPORT_STOP, SUPPORT_TURN_OFF, SUPPORT_TURN_ON, VacuumEntity
 from homeassistant.const import CONF_NAME, CONF_HOST, CONF_TOKEN
@@ -84,23 +84,19 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
-    name = config.get(CONF_NAME)
-    host = config.get(CONF_HOST)
-    token = config.get(CONF_TOKEN)
-    did = config.get('did')
-    if host and token:
-        add_entities([ZhiViomiWasher(name, did, Device(host, token))], True)
-    elif did:
-        add_entities([ZhiViomiCloudWasher(name, str(did))], True)
+    if CONF_NAME in config and CONF_HOST in config:
+        add_entities([ZhiViomiWasher(config)], True)
+    elif 'did' in config:
+        add_entities([ZhiViomiCloudWasher(config)], True)
     else:
         _LOGGER.error('Need %s/%s or did.', CONF_HOST, CONF_TOKEN)
 
 
 class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
 
-    def __init__(self, name, did):
-        super().__init__(name, 'mdi:washing-machine')
-        self.did = did
+    def __init__(self, conf):
+        super().__init__(conf, 'mdi:washing-machine')
+        self.did = str(conf['did'])
         self.values = [None for i in range(len(PROP_NAMES))]
 
     async def async_poll(self):
@@ -124,10 +120,10 @@ class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
     def status(self):
         return self._status
 
-    def update_status(self, status):
+    async def async_update_status(self, status):
         self._status = status
         self.skip_poll = True
-        self.schedule_update_ha_state()
+        await self.async_update_ha_state()
 
     @property
     def is_on(self):
@@ -135,7 +131,7 @@ class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
 
     async def async_turn_on(self, **kwargs):
         if self.values[PROP_Status] == WASH_State.Idle:
-            self.update_status('已是待机状态')
+            await self.async_update_status('已是待机状态')
         else:
             if self.values[PROP_Status] != WASH_State.Off:
                 await self.async_stop()
@@ -175,11 +171,11 @@ class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
         if self.is_busy:
             await self.async_control('暂停', -ACTION_Pause, WASH_State.Busy)
         else:
-            self.update_status('非工作状态，无法暂停')
+            await self.async_update_status('非工作状态，无法暂停')
 
     async def async_stop(self, **kwargs):
         if self.values[PROP_Status] == WASH_State.Off:
-            self.update_status('已经是关机状态')
+            await self.async_update_status('已经是关机状态')
         else:
             await self.async_turn_off()
 
@@ -217,9 +213,9 @@ class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
             if value is None:
                 value = self.values[piid]
             elif value == self.values[piid]:
-                self.update_status('当前已' + doing)
+                await self.async_update_status('当前已' + doing)
                 return None
-        self.update_status('正在' + doing)
+        await self.async_update_status('正在' + doing)
         code = await self.mi_control(piid, value)
         if code == 0:
             if piid > 0:
@@ -230,9 +226,9 @@ class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
                 if piid == -ACTION_Stop_Washing:
                     self.values[PROP_Dry_Mode] = None
                     self.values[PROP_Appoint_Time] = None
-            self.update_status(doing + '成功')
+            await self.async_update_status(doing + '成功')
         else:
-            self.update_status(doing + '错误：%s' % code)
+            await self.async_update_status(doing + '错误：%s' % code)
         return code
 
     async def mi_poll(self):
@@ -252,9 +248,9 @@ class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
 
 class ZhiViomiWasher(ZhiViomiCloudWasher):
 
-    def __init__(self, name, did, device):
-        super().__init__(name, did)
-        self._device = device
+    def __init__(self, conf):
+        super().__init__(conf)
+        self._device = Device(conf[CONF_HOST], conf[CONF_TOKEN])
         self._polls = 0
 
     @property
