@@ -1,14 +1,12 @@
+from ..zhimi.entity import ZhiMIoTEntity
 from .viomi_washer_v5 import *
-from ..zhimi import miio_service
-from ..zhi.entity import ZhiPollEntity
-
+from asyncio import sleep
 from homeassistant.components.vacuum import PLATFORM_SCHEMA, SUPPORT_CLEAN_SPOT, SUPPORT_FAN_SPEED, SUPPORT_LOCATE, SUPPORT_PAUSE, SUPPORT_RETURN_HOME, SUPPORT_SEND_COMMAND, SUPPORT_START, SUPPORT_STATUS, SUPPORT_STOP, SUPPORT_TURN_OFF, SUPPORT_TURN_ON, VacuumEntity
 from homeassistant.const import CONF_NAME, CONF_HOST, CONF_TOKEN
 from miio import Device
 import datetime
 import homeassistant.helpers.config_validation as cv
 import logging
-from asyncio import sleep
 import voluptuous as vol
 
 
@@ -37,43 +35,14 @@ class WASH_State(IntEnum):
     Unknown = 9
 
 
-PROP_NAMES = {
-    'wash_status': '暂停状态',
-    'child_lock': '按键锁定',
-    'wash_process': '洗涤阶段',
-    'program': '洗涤模式',
-    'remain_time': '剩余时间',
-    'water_temp': '洗涤水温',
-    'spin_level': '脱水转速',
-    'DryMode': '烘干模式',
-    'appoint_time': '预约时间',
-    # 'be_status',
-    # 'run_status',
-    # 'rinse_status',
-}
+PROP_KEYS = ['wash_status', 'child_lock', 'wash_process', 'program', 'remain_time', 'water_temp', 'spin_level', 'DryMode', 'appoint_time']
 
-MODE_NAMES = {
-    'dry': '黄金烘',
-    'weak_dry': '低温烘',
-    'refresh': '空气洗',
-    'goldenwash': '黄金洗',
-    'super_quick': '超快洗',
-    'cottons': '棉织物',
-    'wool': '羊毛',
-    'down': '羽绒服',
-    'drumclean': '筒清洁',
-    'antibacterial': '除菌洗',
-    'rinse_spin': '漂+脱',
-    'spin': '单脱水',
-    'quick': '快洗',
-    'shirt': '衬衣',
-    'jeans': '牛仔',
-    'underwears': '内衣',
-}
+MODE_KEYS = [None, 'dry', 'weak_dry', 'refresh', 'goldenwash', 'super_quick', 'cottons', 'wool', 'down', 'drumclean', 'antibacterial', 'rinse_spin', 'spin', 'quick', 'shirt', 'jeans', 'underwears']
+MODE_NAMES = ['黄金烘', '低温烘', '空气洗', '黄金洗', '超快洗', '棉织物', '羊毛', '羽绒服', '筒清洁', '除菌洗', '漂+脱', '单脱水', '快洗', '衬衣', '牛仔', '内衣']
 
 MIOT_STATES = [WASH_State.Unknown, WASH_State.Idle, WASH_State.Busy, WASH_State.Fault, WASH_State.Off]
 STATE_NAMES = ['待机', '称重', '洗涤', '阶段3', '阶段4', '阶段5', '错误', '关机', '繁忙', '未知']
-STATUS_PROPS = {PROP_Left_Time: '｜剩{}分钟', PROP_Dry_Mode: '｜烘干', PROP_Appoint_Time: '｜预约{}小时'}
+STATUS_PROPS = {PROP_Paused: '｜暂停', PROP_Left_Time: '｜剩{}分钟', PROP_Dry_Mode: '｜烘干', PROP_Appoint_Time: '｜预约{}小时'}
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_NAME): cv.string,
@@ -92,25 +61,23 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         _LOGGER.error('Need %s/%s or did.', CONF_HOST, CONF_TOKEN)
 
 
-class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
+class ZhiViomiCloudWasher(ZhiMIoTEntity, VacuumEntity):
 
     def __init__(self, conf):
-        super().__init__(conf, 'mdi:washing-machine')
-        self.did = str(conf['did'])
-        self.values = [None for i in range(len(PROP_NAMES))]
+        super().__init__(ALL_PROPS, conf, 'mdi:washing-machine')
+        self.values = {PROP_Paused: None}
 
     async def async_poll(self):
         await self.mi_poll()
         self._status = STATE_NAMES[self.values[PROP_Status]]
-        if self.values[PROP_Paused]:
-            self._status += '暂停'
         if self.is_on:
             self._status += ''.join([v.format(self.values[k]) for k, v in STATUS_PROPS.items() if self.values[k]])
-        return True
+        return self.values
 
-    @property
-    def device_state_attributes(self):
-        return {list(PROP_NAMES.values())[i]: self.values[i] for i in range(len(self.values)) if self.values[i]}
+    async def mi_poll(self):
+        data = await super().async_poll()
+        for k, v in data.items():
+            self.values[k] = MIOT_STATES[v] if k == PROP_Status else v
 
     @property
     def supported_features(self):
@@ -122,7 +89,6 @@ class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
 
     async def async_update_status(self, status):
         self._status = status
-        self.skip_poll = True
         await self.async_update_ha_state()
 
     @property
@@ -136,40 +102,40 @@ class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
             if self.values[PROP_Status] != WASH_State.Off:
                 await self.async_stop()
                 await sleep(1)
-            if not await self.async_control('开机', PROP_Mode):
+            def success(siid, iid, value):
                 self.values[PROP_Status] = WASH_State.Idle
+            await self.async_control(SRV_Washer, PROP_Mode, None, '开机', success)
 
     async def async_turn_off(self, **kwargs):
-        await self.async_control('停止', -ACTION_Stop_Washing, WASH_State.Off)
+        await self.async_action(ACTION_Stop_Washing, '停止')
 
     @property
     def fan_speed(self):
-        return self.fan_speed_list[self.values[PROP_Mode] - 1]
+        return MODE_NAMES[self.values[PROP_Mode] - 1]
 
     @property
     def fan_speed_list(self):
-        return list(MODE_NAMES.values())
+        return MODE_NAMES
 
     async def async_set_fan_speed(self, fan_speed, **kwargs):
-        await self.async_control('设定' + fan_speed + '模式', PROP_Mode, self.fan_speed_list.index(fan_speed) + 1)
+        await self.async_control(SRV_Washer, PROP_Mode, self.fan_speed_list.index(fan_speed) + 1, '设定' + fan_speed + '模式')
 
     @property
     def is_busy(self):
-        status = self.values[PROP_Status]
-        return status == WASH_State.Busy or (status >= WASH_State.Washing1 and self.values[PROP_Status] <= WASH_State.Washing6)
+        return self.values[PROP_Status] == WASH_State.Busy or (self.values[PROP_Status] >= WASH_State.Washing1 and self.values[PROP_Status] <= WASH_State.Washing6)
 
     async def async_start(self):
         if not self.values[PROP_Paused] and self.is_busy:
             lock = not self.values[PROP_Physical_Control_Locked]
-            return await self.async_control('锁定' if lock else '解锁', PROP_Physical_Control_Locked, lock)
+            return await self.async_control(SRV_Physical_Control_Locked, PROP_Physical_Control_Locked, lock, '锁定' if lock else '解锁')
         if not self.is_on:
             await self.async_turn_on()
             await sleep(1)
-        await self.async_control('启动', -ACTION_Start_Wash, WASH_State.Busy)
+        await self.async_action(ACTION_Start_Wash, '启动')
 
     async def async_pause(self):
         if self.is_busy:
-            await self.async_control('暂停', -ACTION_Pause, WASH_State.Busy)
+            await self.async_action(ACTION_Pause, '暂停')
         else:
             await self.async_update_status('非工作状态，无法暂停')
 
@@ -195,10 +161,10 @@ class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
                 # fanspeed=$[value],dry_mode|appoint[=value]
                 async_func = getattr(self, async_cmd)
                 await (async_func(value) if count > 1 else async_func())
-            elif count > 1:
+            elif count > 1 and cmd in PROP_KEYS:
                 # program|water_temp|spin_level|DryMode|appoint_time=value
-                piid = list(PROP_NAMES.keys()).index(cmd) if cmd in PROP_NAMES else int(cmd)
-                code = await self.async_control('设定' + PROP_NAMES.get(cmd, ''), piid, value)
+                piid = PROP_KEYS.index(cmd)
+                code = await self.async_control(SRV_Washer, piid, value, '设定' + (ALL_PROPS[SRV_Washer].get(piid, '')))
                 if code is None:
                     continue
                 elif code != 0:
@@ -208,42 +174,12 @@ class ZhiViomiCloudWasher(ZhiPollEntity, VacuumEntity):
                 continue
             await sleep(1)
 
-    async def async_control(self, doing, piid, value=None):
-        if piid > 0:
-            if value is None:
-                value = self.values[piid]
-            elif value == self.values[piid]:
-                await self.async_update_status('当前已' + doing)
-                return None
-        await self.async_update_status('正在' + doing)
-        code = await self.mi_control(piid, value)
-        if code == 0:
-            if piid > 0:
-                self.values[piid] = value
-            else:
-                self.values[PROP_Status] = value
-                self.values[PROP_Paused] = piid == -ACTION_Pause
-                if piid == -ACTION_Stop_Washing:
-                    self.values[PROP_Dry_Mode] = None
-                    self.values[PROP_Appoint_Time] = None
-            await self.async_update_status(doing + '成功')
-        else:
-            await self.async_update_status(doing + '错误：%s' % code)
-        return code
+    async def async_action(self, aiid, op):
+        await self.async_control(SRV_Washer, aiid, [], op, self.action_success)
 
-    async def mi_poll(self):
-        props = [(SRV_Physical_Control_Locked, PROP_Physical_Control_Locked)] + [(SRV_Washer, i) for i in range(PROP_Status, PROP_Spin_Speed + 1)]
-        values = await miio_service.miot_get_props(self.did, props)
-        for i in range(len(values)):
-            self.values[i + 1] = MIOT_STATES[values[i]] if i + 1 == PROP_Status else values[i]
-
-    async def mi_control(self, piid, value=None):
-        if piid < 0:
-            _LOGGER.debug('Cloud action: %s', -piid)
-            return await miio_service.miot_do_action(self.did, SRV_Washer, -piid)
-        _LOGGER.debug('Cloud set_prop: %s=%s', piid, value)
-        siid = SRV_Physical_Control_Locked if piid == PROP_Physical_Control_Locked else SRV_Washer
-        return await miio_service.miot_set_prop(self.did, siid, piid, value)
+    def action_success(self, siid, aiid, value):
+        self.values[PROP_Status] = (WASH_State.Busy, WASH_State.Off)[aiid == ACTION_Stop_Washing]
+        self.values[PROP_Paused] = aiid == ACTION_Pause
 
 
 class ZhiViomiWasher(ZhiViomiCloudWasher):
@@ -252,10 +188,18 @@ class ZhiViomiWasher(ZhiViomiCloudWasher):
         super().__init__(conf)
         self._device = Device(conf[CONF_HOST], conf[CONF_TOKEN])
         self._polls = 0
+        self.values[PROP_Dry_Mode] = None
+        self.values[PROP_Appoint_Time] = None
 
     @property
     def supported_features(self):
         return super().supported_features | SUPPORT_CLEAN_SPOT | SUPPORT_LOCATE
+
+    def action_success(self, siid, aiid, value):
+        super().action_success(siid, aiid, value)
+        if aiid == ACTION_Stop_Washing:
+            self.values[PROP_Dry_Mode] = 0
+            self.values[PROP_Appoint_Time] = 0
 
     async def async_clean_spot(self, **kwargs):
         if not self.is_on:
@@ -270,7 +214,7 @@ class ZhiViomiWasher(ZhiViomiCloudWasher):
         await self.async_appoint()
 
     async def async_dry_mode(self, mode=1):
-        await self.async_control(('设定' if mode else '取消') + '烘干模式', PROP_Dry_Mode, DEFAULT_DRY_MODE if mode == 1 else mode)
+        await self.async_control(SRV_Washer, PROP_Dry_Mode, DEFAULT_DRY_MODE if mode == 1 else mode, ('设定' if mode else '取消') + '烘干模式')
 
     async def async_appoint(self, atime=DEFAULT_APPOINT_TIME):
         if atime < 0:
@@ -288,11 +232,11 @@ class ZhiViomiWasher(ZhiViomiCloudWasher):
             status = '预约%s点钟完成洗衣' % aclock
         else:
             status = '预约%s小时后完成洗衣' % atime
-        await (self.async_control(status, PROP_Appoint_Time, atime) if atime else super().async_start())
+        await (self.async_control(SRV_Washer, PROP_Appoint_Time, atime, status) if atime else super().async_start())
 
     async def mi_poll(self):
         self._polls += 1
-        count = len(PROP_NAMES)
+        count = len(PROP_KEYS)
         if self.did and self._polls % (count + 1) != 2:
             try:
                 #_LOGGER.debug('Cloud MiOT update')
@@ -301,42 +245,42 @@ class ZhiViomiWasher(ZhiViomiCloudWasher):
                 _LOGGER.error("Cloud MiOT error: %s. Retry local MiIO.", e)
 
         cycle = self._polls % count
-        keys = list(PROP_NAMES.keys())
         for i in range(count):
-            if self.values[i] is not None and i != cycle:
+            if self.values.get(i) is not None and i != cycle:
                 continue
-            #_LOGGER.debug('Local MiIO update %s: %s', i, keys[i])
-            value = await self.miio_send('get_prop', keys[i])
-            if i == PROP_Mode:
-                value = list(MODE_NAMES.keys()).index(value) + 1
-            elif i == PROP_Paused:
-                value = not value
-            self.values[i] = value
+            #_LOGGER.debug('Local MiIO update %s: %s', i, PROP_KEYS[i])
+            value = await self.miio_send('get_prop', PROP_KEYS[i])
+            if i == PROP_Paused:
+                self.values[PROP_Paused] = not value
+            elif i == PROP_Mode:
+                self.values[i] = MODE_KEYS.index(value)
+            else:
+                self.values[i] = value
 
-    async def mi_control(self, piid, value=None):
-        if piid < 0:
+    async def mi_control(self, siid, iid, value=[]):
+        if isinstance(value, list):
             name = 'set_wash_action'
-            data = {ACTION_Start_Wash: 1, ACTION_Pause: 0, ACTION_Stop_Washing: 2}[-piid]
-        elif piid == PROP_Mode:
+            data = {ACTION_Start_Wash: 1, ACTION_Pause: 0, ACTION_Stop_Washing: 2}[iid]
+        elif iid == PROP_Mode:
             name = 'set_wash_program'
-            data = list(MODE_NAMES.keys())[value - 1]
+            data = MODE_KEYS[value]
         else:
             data = value
-            if piid == PROP_Physical_Control_Locked:
+            if siid == PROP_Physical_Control_Locked:
                 name = 'set_child_lock'
-            elif piid == PROP_Dry_Mode:
+            elif iid == PROP_Dry_Mode:
                 name = 'SetDryMode'
-            elif piid == PROP_Appoint_Time:
+            elif iid == PROP_Appoint_Time:
                 name = 'set_appoint_time'
             else:
-                name = piid
+                name = iid  # Impossible
         _LOGGER.debug('Local action: %s=%s', name, data)
         try:
             ret = await self.miio_send(name, data)
             return 0 if ret == 'ok' else ret
         except Exception as e:
             _LOGGER.error("Error on local action: %s", e)
-            return (await super().mi_control(piid, value)) if self.did else e
+            return (await super().mi_control(siid, iid, value)) if self.did else e
 
     async def miio_send(self, name, data):
         return (await self.hass.async_add_executor_job(self._device.send, name, [data]))[0]

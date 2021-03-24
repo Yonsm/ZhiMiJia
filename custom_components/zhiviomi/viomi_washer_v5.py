@@ -54,5 +54,5 @@ ACTION_Stop_Washing = 3
 SRV_Physical_Control_Locked = 3
 PROP_Physical_Control_Locked = 1 #bool #rw
 
-ALL_PROPS = {2: {2: 'Status', 3: 'Mode', 4: 'Left_Time', 5: 'Target_Temperature', 6: 'Spin_Speed'}, 3: {1: 'Physical_Control_Locked'}}
+ALL_PROPS = {2: {2: '工作状态', 3: '洗涤模式', 4: '剩余时间', 5: '洗涤水温', 6: '脱水转速'}, 3: {1: '按键锁定'}}
 
