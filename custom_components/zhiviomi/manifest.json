@@ -3,7 +3,7 @@
 	"name": "Zhi VioMi Washer",
 	"documentation": "https://github.com/Yonsm/ZhiViomi",
 	"version": "2.0.0",
-	"requirements": ["python-miio>=0.5.3"],
+	"requirements": ["python-miio>=0.5.6"],
 	"dependencies": ["zhimi"],
 	"codeowners": ["@Yonsm"]
 }
