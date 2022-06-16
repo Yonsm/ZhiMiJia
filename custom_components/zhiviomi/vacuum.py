@@ -122,7 +122,7 @@ class ZhiViomiCloudWasher(ZhiMIoTEntity, VacuumEntity):
 
     @property
     def is_busy(self):
-        return self.values[PROP_Status] == WASH_State.Busy or (self.values[PROP_Status] >= WASH_State.Washing1 and self.values[PROP_Status] <= WASH_State.Washing6)
+        return self.values[PROP_Status] == WASH_State.Busy or (self.values[PROP_Status] >= WASH_State.Washing1 and self.values[PROP_Status] <= WASH_State.Fault)
 
     async def async_start(self):
         if not self.values[PROP_Paused] and self.is_busy:
