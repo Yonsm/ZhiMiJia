@@ -149,7 +149,7 @@ class ZhiViomiCloudWasher(ZhiMIoTEntity, VacuumEntity):
                 code = await self.async_control(SRV_Washer, piid, value, '设定' + (ALL_PROPS[SRV_Washer].get(piid, '')))
                 if code is None:
                     continue
-                elif code == False:
+                elif code != 0:
                     return
             else:
                 _LOGGER.error("Invalid speed format:%s", params)
