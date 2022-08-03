@@ -1,10 +1,10 @@
 from ..zhi.cover import ZhiTravelCover
-from ..zhimi.entity import ZhiMiEntity, ZHI_MIOT_SCHEMA
+from ..zhimi.entity import ZhiMiEntity, ZHIMI_SCHEMA
 from homeassistant.components.cover import PLATFORM_SCHEMA, STATE_CLOSED, STATE_OPEN, STATE_OPENING, STATE_CLOSING
 
 AIRER_TRAVEL_TIME = 28
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(ZHI_MIOT_SCHEMA)
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(ZHIMI_SCHEMA)
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):

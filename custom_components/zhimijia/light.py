@@ -4,13 +4,13 @@ import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 
 from math import ceil
-from ..zhimi.entity import ZhiMiEntity, ZHI_MIOT_SCHEMA
+from ..zhimi.entity import ZhiMiEntity, ZHIMI_SCHEMA
 
 import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(ZHI_MIOT_SCHEMA | {
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(ZHIMI_SCHEMA | {
     vol.Optional('power_prop', default='power'): cv.string,
     vol.Optional('power_on'): object,
     vol.Optional('power_off'): object,
