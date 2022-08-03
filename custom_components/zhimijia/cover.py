@@ -17,28 +17,29 @@ class ZhiMrBondAirer(ZhiMiEntity, ZhiTravelCover):
         ZhiTravelCover.__init__(self, AIRER_TRAVEL_TIME)
         ZhiMiEntity.__init__(self, ['dry', 'led', 'motor', 'drytime', 'airer_location'], conf, 'mdi:hanger')
 
+    @property
+    def available(self):
+        return True
+
     async def async_poll(self):
-        try:
-            data = await super().async_poll()
+        data = await super().async_poll()
 
-            motor = int(data['airer_location'])
-            if motor == 1:
-                self._state = STATE_OPENING
-            elif motor == 2:
-                self._state = STATE_CLOSING
+        motor = int(data['airer_location'])
+        if motor == 1:
+            self._state = STATE_OPENING
+        elif motor == 2:
+            self._state = STATE_CLOSING
 
-            location = int(data['airer_location'])
-            if location == 1:
-                self._position = 100
-                self._state = STATE_OPEN
-            elif location == 2:
-                self._position = 0
-                self._state = STATE_CLOSED
-            elif self._state not in (STATE_OPENING, STATE_CLOSING):
-                self._position = 50
+        location = int(data['airer_location'])
+        if location == 1:
+            self._position = 100
+            self._state = STATE_OPEN
+        elif location == 2:
+            self._position = 0
+            self._state = STATE_CLOSED
+        elif self._state not in (STATE_OPENING, STATE_CLOSING):
+            self._position = 50
 
-        except Exception:
-            data = {}
         return data
 
     async def control_cover(self, op):
