@@ -13,17 +13,6 @@ APPOINT_MAX = 23  # 19 in app default
 DEFAULT_APPOINT_TIME = -8  # -8 means 8 o'clock, 8 means 8 hours later
 
 
-PROP_IIDS = {
-    'switch_status': Washer.Switch_Status,
-    'mode': Washer.Mode,
-    'target_temperature': Washer.Target_Temperature,
-    'spin_speed': Washer.Spin_Speed,
-    'drying_time': Washer.Drying_Time,
-    'rinsh_times': Washer.Rinsh_Times,
-    'speed_level': Washer.Speed_Level,
-}
-
-
 class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
 
     def __init__(self, conf):
@@ -97,13 +86,16 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
         if not self.is_on:
             await self.async_turn_on()
             await sleep(1)
-        await self.async_action(Washer.Start_Wash, '启动')
+        await self.async_control(Washer.Start_Wash, [self.data[Washer.Mode]], '启动', self.action_success)
 
     async def async_pause(self):
         if self.data[Washer.Status] == Washer_Status.繁忙:
-            await self.async_action(Washer.Pause, '暂停')
+            await self.async_control(Washer.Pause, [self.data[Washer.Mode]], '暂停', self.action_success)
         else:
             await self.async_update_status('非工作状态，无法暂停')
+
+    def action_success(self, iid, value):
+        self.data[Washer.Status] = (Washer_Status.繁忙, Washer_Status.暂停)[iid == Washer.Start_Wash]
 
     async def async_stop(self, **kwargs):
         if self.data[Washer.Status] == Washer_Status.关机:
@@ -127,23 +119,17 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
                 # fanspeed=$[value],dry_mode|appoint[=value]
                 async_func = getattr(self, async_cmd)
                 await (async_func(value) if count > 1 else async_func())
-            elif count > 1 and cmd in PROP_IIDS:
-                prop = PROP_IIDS[cmd]
-                code = await self.async_control(prop, value, '设定' + self.props[prop])
+            elif count > 1 and cmd in self.attrs:
+                prop = self.props[self.attrs.index(cmd)]
+                code = await self.async_control(prop, value, '设定' + cmd)
                 if code is None:
                     continue
                 elif code == False:
                     return
             else:
-                _LOGGER.error("Invalid speed format:%s", params)
+                _LOGGER.error("Invalid item: %s", item)
                 continue
             await sleep(1)
-
-    async def async_action(self, aiid, op):
-        await self.async_control(aiid, [self.data[Washer.Mode]], op, self.action_success)
-
-    def action_success(self, iid, value):
-        self.data[Washer.Status] = (Washer_Status.繁忙, Washer_Status.暂停)[iid == Washer.Start_Wash]
 
     async def async_clean_spot(self, **kwargs):
         if not self.is_on:

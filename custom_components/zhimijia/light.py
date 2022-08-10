@@ -37,12 +37,10 @@ class ZhiMiLight(ZhiMiEntity, LightEntity):
 
     @property
     def supported_features(self):
-        """Flag supported features."""
         return SUPPORT_BRIGHTNESS if self.brightness_prop is not None else 0
 
     @property
     def brightness(self):
-        """Return the brightness of this light between 0..255."""
         return (self.data[self.brightness_prop] * 255 / 100) if self.brightness_prop is not None else 100
 
     @property
