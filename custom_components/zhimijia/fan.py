@@ -19,16 +19,16 @@ ALL_MODES = {
 }
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    model = config.get('model', 'zhimi.fan')
+async def async_setup_platform(hass, conf, async_add_entities, discovery_info=None):
+    model = conf.get('model', 'zhimi.fan')
     if model in ALL_PROPS:
-        entity = ZhiMiIOFan(hass, ALL_PROPS[model], config)
+        entity = ZhiMiIOFan(hass, ALL_PROPS[model], conf)
         entity.model = model
     else:
         from importlib import import_module
         module = import_module('.' + model.replace('.', '_'), __package__)
         globals().update({x: getattr(module, x) for x in module.__dict__ if not x.startswith('_')})
-        entity = ZhiMIoTFan(hass, ALL_SVCS, config)
+        entity = ZhiMIoTFan(hass, ALL_SVCS, conf)
     async_add_entities([entity], True)
 
 
