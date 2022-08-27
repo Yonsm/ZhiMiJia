@@ -1,5 +1,4 @@
 #from .zhimi_fan_v3 import *
-from importlib import import_module
 from ..zhimi.entity import ZhiMiEntity, ZHIMI_SCHEMA
 from homeassistant.components.fan import FanEntity, PLATFORM_SCHEMA, DIRECTION_REVERSE, DIRECTION_FORWARD, SUPPORT_SET_SPEED, SUPPORT_PRESET_MODE, SUPPORT_DIRECTION, SUPPORT_OSCILLATE
 from homeassistant.const import STATE_OFF, STATE_ON
@@ -23,12 +22,13 @@ ALL_MODES = {
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     model = config.get('model', 'zhimi.fan')
     if model in ALL_PROPS:
-        entity = ZhiMiIOFan(ALL_PROPS[model], config)
+        entity = ZhiMiIOFan(hass, ALL_PROPS[model], config)
         entity.model = model
     else:
+        from importlib import import_module
         module = import_module('.' + model.replace('.', '_'), __package__)
         globals().update({x: getattr(module, x) for x in module.__dict__ if not x.startswith('_')})
-        entity = ZhiMIoTFan(ALL_SVCS, config)
+        entity = ZhiMIoTFan(hass, ALL_SVCS, config)
     async_add_entities([entity], True)
 
 
@@ -97,10 +97,6 @@ class ZhiMiIOFan(ZhiMiEntity, FanEntity):
         if 'natural_level' in self.props:
             features |= SUPPORT_DIRECTION
         return features
-
-    @property
-    def extra_state_attributes(self):
-        return {('temperature' if k == 'temp_dec' else k): ((v/10) if k == 'temp_dec' else v) for k, v in super().extra_state_attributes.items()}
 
     @property
     def state(self):

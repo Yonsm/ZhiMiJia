@@ -17,7 +17,7 @@ class ZhiMrBondAirer(ZhiEntity, ZhiTravelCover):
 
     def __init__(self, conf):
         ZhiTravelCover.__init__(self, AIRER_TRAVEL_TIME)
-        #ZhiMiEntity.__init__(self, ['dry', 'led', 'motor', 'drytime', 'airer_location'], conf, 'mdi:hanger')
+        #ZhiMiEntity.__init__(self, hass, ['dry', 'led', 'motor', 'drytime', 'airer_location'], conf, 'mdi:hanger')
         ZhiEntity.__init__(self, conf, 'mdi:hanger')
         self.did = conf[CONF_DID]
 

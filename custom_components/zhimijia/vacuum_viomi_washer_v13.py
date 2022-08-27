@@ -15,8 +15,8 @@ DEFAULT_APPOINT_TIME = -8  # -8 means 8 o'clock, 8 means 8 hours later
 
 class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
 
-    def __init__(self, conf):
-        super().__init__(ALL_SVCS, conf, 'mdi:washing-machine')
+    def __init__(self, hass, conf):
+        super().__init__(hass, ALL_SVCS, conf, 'mdi:washing-machine')
 
     async def async_poll(self):
         data = await super().async_poll()

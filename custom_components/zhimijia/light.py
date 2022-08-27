@@ -18,13 +18,13 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(ZHIMI_SCHEMA | {
 })
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    async_add_entities([ZhiMiLight(config)], True)
+async def async_setup_platform(hass, conf, async_add_entities, discovery_info=None):
+    async_add_entities([ZhiMiLight(hass, conf)], True)
 
 
 class ZhiMiLight(ZhiMiEntity, LightEntity):
 
-    def __init__(self, conf):
+    def __init__(self, hass, conf):
         self.power_prop = conf['power_prop']
         self.brightness_prop = conf.get('brightness_prop')
         miot = self.power_prop[0].isdigit()
@@ -33,7 +33,7 @@ class ZhiMiLight(ZhiMiEntity, LightEntity):
         props = [self.power_prop]
         if self.brightness_prop is not None:
             props.append(self.brightness_prop)
-        super().__init__(props, conf)
+        super().__init__(hass, props, conf)
 
     @property
     def supported_features(self):
