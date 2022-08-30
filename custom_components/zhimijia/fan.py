@@ -10,11 +10,11 @@ ALL_PROPS = {
     'zhimi.fan.za3': ['power', 'angle', 'angle_enable', 'poweroff_time', 'speed_level', 'natural_level', 'child_lock', 'led_b', 'buzzer'],
     'zhimi.fan.v3': ['power', 'angle', 'angle_enable', 'poweroff_time', 'speed_level', 'natural_level', 'child_lock', 'led_b', 'buzzer', 'battery', 'temp_dec', 'humidity'],
     'zhimi.airfresh.va2': ['power', 'mode', 'aqi', 'temp_dec', 'humidity', 'co2', 'f1_hour_used', 'child_lock', 'buzzer', 'led_level'],
-    'zhimi.airpurifier.m1': ['power', 'mode', 'aqi', 'average_aqi', 'temp_dec', 'humidity', 'favorite_level', 'f1_hour_used', 'child_lock', 'buzzer', 'bright', 'filter1_life', 'use_time', 'motor1_speed', 'purify_volume'],
+    'zhimi.airpurifier.m1': ['power', 'mode', 'aqi', 'average_aqi', 'temp_dec', 'humidity', 'favorite_level', 'f1_hour_used', 'child_lock', 'buzzer', 'filter1_life', 'use_time', 'motor1_speed', 'purify_volume'],
 }
 
 ALL_MODES = {
-    'zhimi.airpurifier.m1': {'auto': '自动', 'silent': '静音', 'favorite': '最爱'},
+    'zhimi.airpurifier.m1': {'idle': '空闲', 'auto': '自动', 'silent': '静音', 'favorite': '最爱'},
     'zhimi.airfresh.va2': {'auto': '自动', 'silent': '静音', 'interval': '间歇', 'low': '低档', 'middle': '中档', 'strong': '高档'},
 }
 
