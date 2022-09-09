@@ -59,14 +59,14 @@ class ZhiMIoTFan(ZhiMiEntity, FanEntity):
 
     @property
     def preset_modes(self):
-        return ['档位' + str(i) for i in range(Fan_Level.MIN, Fan_Level.MAX + 1)]
+        return [str(i) + '档' for i in range(Fan_Level.MIN, Fan_Level.MAX + 1)]
 
     @property
     def preset_mode(self):
-        return '档位' + str(self.data[Fan.Level])
+        return str(self.data[Fan.Level]) + '档'
 
     async def async_set_preset_mode(self, preset_mode):
-        await self.async_control(Fan.Level, int(preset_mode[2] if len(preset_mode) > 2 else preset_mode))
+        await self.async_control(Fan.Level, int(preset_mode[0]))
 
     @property
     def oscillating(self):
@@ -125,21 +125,20 @@ class ZhiMiIOFan(ZhiMiEntity, FanEntity):
     def preset_modes(self):
         if self.model in ALL_MODES:
             return list(ALL_MODES[self.model].values())
-        return ['档位' + str(i) for i in range(1, 5)]
+        return [str(i) + '档' for i in range(1, 5)]
 
     @property
     def preset_mode(self):
         if self.model in ALL_MODES:
             return ALL_MODES[self.model][self.data['mode']]
-        return '档位' + str(int((self.data['speed_level'] + 24) / 25))
+        return str(int((self.data['speed_level'] + 24) / 25)) + '档'
 
     async def async_set_preset_mode(self, preset_mode):
         if self.model in ALL_MODES:
             modes = ALL_MODES[self.model]
             preset_modes = list(modes.values())
             return await self.async_control('mode', list(modes.keys())[preset_modes.index(preset_mode)] if preset_mode in preset_modes else preset_mode)
-        level = int(preset_mode[2] if len(preset_mode) > 2 else preset_mode)
-        await self.async_control('speed_level', level * 25)
+        await self.async_control('speed_level', int(preset_mode[0]) * 25)
 
     @property
     def oscillating(self):
