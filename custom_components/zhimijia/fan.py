@@ -92,7 +92,7 @@ class ZhiMiIOFan(ZhiMiEntity, FanEntity):
             features |= SUPPORT_SET_SPEED
         if 'mode' in self.props or 'speed_level' in self.props:
             features |= SUPPORT_PRESET_MODE
-        if 'angle' in self.props:
+        if 'angle' in self.props or 'led_level' in self.props:
             features |= SUPPORT_OSCILLATE
         if 'natural_level' in self.props:
             features |= SUPPORT_DIRECTION
@@ -143,10 +143,13 @@ class ZhiMiIOFan(ZhiMiEntity, FanEntity):
 
     @property
     def oscillating(self):
-        return self.data['angle_enable'] == 'on'
+        return self.data['angle_enable'] == 'on' if 'angle' in self.props else self.data['led_level'] != 2
 
     async def async_oscillate(self, oscillating):
-        await self.async_control('angle' if oscillating else 'angle_enable', 30 if oscillating else 'off', ignore_prop=True)
+        if 'angle' in self.props:
+            await self.async_control('angle' if oscillating else 'angle_enable', 30 if oscillating else 'off', ignore_prop=True)
+        else:
+            await self.async_control('led_level', 0 if oscillating else 2)
 
     @property
     def current_direction(self):
