@@ -3,7 +3,7 @@
 	"name": "Zhi MiJia General Device",
 	"documentation": "https://github.com/Yonsm/ZhiMiJia",
 	"version": "1.0.1",
-	"requirements": ["miservice>=2.0.1"],
+	"requirements": [],
 	"dependencies": ["zhimi"],
 	"codeowners": ["@Yonsm"]
 }
