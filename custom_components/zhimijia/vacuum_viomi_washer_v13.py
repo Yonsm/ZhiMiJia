@@ -86,16 +86,16 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
         if not self.is_on:
             await self.async_turn_on()
             await sleep(1)
-        await self.async_control(Washer.Start_Wash, [self.data[Washer.Mode]], '启动', self.action_success)
+        await self.async_control(Washer._Start_Wash, [self.data[Washer.Mode]], '启动', self.action_success)
 
     async def async_pause(self):
         if self.data[Washer.Status] == Washer_Status.繁忙:
-            await self.async_control(Washer.Pause, [self.data[Washer.Mode]], '暂停', self.action_success)
+            await self.async_control(Washer._Pause, [self.data[Washer.Mode]], '暂停', self.action_success)
         else:
             await self.async_update_status('非工作状态，无法暂停')
 
     def action_success(self, iid, value):
-        self.data[Washer.Status] = (Washer_Status.繁忙, Washer_Status.暂停)[iid == Washer.Start_Wash]
+        self.data[Washer.Status] = (Washer_Status.繁忙, Washer_Status.暂停)[iid == Washer._Start_Wash]
 
     async def async_stop(self, **kwargs):
         if self.data[Washer.Status] == Washer_Status.关机:
@@ -149,11 +149,14 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
     async def async_appoint(self, atime=DEFAULT_APPOINT_TIME):
         now = datetime.now()
         if atime < 0:
+            now_stamp = now.timestamp()
             aclock = -atime
             if now.hour > aclock:
                 now += timedelta(days=1)
             status = '预约%s点钟完成洗衣' % aclock
             stamp = datetime(now.year, now.month, now.day, aclock).timestamp()
+            if (stamp - now_stamp) / 3600 > 12:
+                atime = 0
         else:
             status = '预约%s小时后完成洗衣' % atime
             stamp = now.timestamp() + atime * 60 * 60 * 1000
