@@ -4,11 +4,11 @@
 from enum import Enum
 
 
-class Device_Information(tuple, Enum):
-    Device_Manufacturer = (1, 1)
-    Device_Model = (1, 2)
-    Device_Serial_Number = (1, 3)
-    Current_Firmware_Version = (1, 4)
+# class Device_Information(tuple, Enum):
+#     Device_Manufacturer = (1, 1)
+#     Device_Model = (1, 2)
+#     Device_Serial_Number = (1, 3)
+#     Current_Firmware_Version = (1, 4)
 
 
 class Washer(tuple, Enum):

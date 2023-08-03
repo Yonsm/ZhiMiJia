@@ -1,5 +1,4 @@
 from ..zhimi.entity import ZhiMiEntity
-from .viomi_washer_v13 import *
 from asyncio import sleep
 from homeassistant.components.vacuum import SUPPORT_CLEAN_SPOT, SUPPORT_FAN_SPEED, SUPPORT_LOCATE, SUPPORT_PAUSE, SUPPORT_RETURN_HOME, SUPPORT_SEND_COMMAND, SUPPORT_START, SUPPORT_STATUS, SUPPORT_STOP, SUPPORT_TURN_OFF, SUPPORT_TURN_ON, VacuumEntity
 from datetime import datetime, timedelta
@@ -15,22 +14,27 @@ DEFAULT_APPOINT_TIME = -8  # -8 means 8 o'clock, 8 means 8 hours later
 
 class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
 
-    def __init__(self, hass, conf):
-        super().__init__(hass, ALL_SVCS, conf, 'mdi:washing-machine')
+    def __init__(self, hass, conf, model):
+        from importlib import import_module
+        module = import_module('.' + model.replace('.', '_'), __package__)
+        for x in module.__dict__:
+            if not x.startswith('_') and x != 'Enum':
+                setattr(self, x, getattr(module, x))
+        super().__init__(hass, self.ALL_SVCS, conf, 'mdi:washing-machine')
 
     async def async_poll(self):
         data = await super().async_poll()
-        self._status = Washer_Status(data[Washer.Status]).name
-        if data[Washer.Status] == Washer_Status.暂停:
+        self._status = self.Washer_Status(data[self.Washer.Status]).name
+        if data[self.Washer.Status] == self.Washer_Status.暂停:
             self._status += '｜暂停'
-        if data[Washer.Status] != Washer_Status.关机:
-            left_time = data[Washer.Left_Time]
+        if data[self.Washer.Status] != self.Washer_Status.关机:
+            left_time = data[self.Washer.Left_Time]
             if left_time:
                 self._status += '｜剩%s分钟' % left_time
-            drying_time = data[Washer.Drying_Time]
+            drying_time = data[self.Washer.Drying_Time]
             if drying_time:
-                self._status += '|' + Washer_Drying_Time(drying_time).name
-            appoint_time = data[Custom.Appoint_Time]
+                self._status += '|' + self.Washer_Drying_Time(drying_time).name
+            appoint_time = data[self.Custom.Appoint_Time]
             if appoint_time:
                 self._status += '｜预约%s' % datetime.fromtimestamp(appoint_time).strftime('%H:%M')
         return data
@@ -49,56 +53,56 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
 
     @property
     def is_on(self):
-        return self.data[Washer.Status] != Washer_Status.关机
+        return self.data[self.Washer.Status] != self.Washer_Status.关机
 
     async def async_turn_on(self, **kwargs):
-        if self.data[Washer.Status] == Washer_Status.待机:
+        if self.data[self.Washer.Status] == self.Washer_Status.待机:
             await self.async_update_status('已是待机状态')
         else:
-            if self.data[Washer.Status] != Washer_Status.关机:
+            if self.data[self.Washer.Status] != self.Washer_Status.关机:
                 await self.async_turn_off()
                 await sleep(1)
 
             def success(iid, value):
-                self.data[Washer.Status] = Washer_Status.待机
-            await self.async_control(Washer.Switch_Status, True, '开机', success, True)
+                self.data[self.Washer.Status] = self.Washer_Status.待机
+            await self.async_control(self.Washer.Switch_Status, True, '开机', success, True)
 
     async def async_turn_off(self, **kwargs):
         def success(iid, value):
-            self.data[Washer.Status] = Washer_Status.关机
-        await self.async_control(Washer.Switch_Status, False, '关机', success, True)
+            self.data[self.Washer.Status] = self.Washer_Status.关机
+        await self.async_control(self.Washer.Switch_Status, False, '关机', success, True)
 
     @property
     def fan_speed(self):
-        return Washer_Mode(self.data[Washer.Mode]).name
+        return self.Washer_Mode(self.data[self.Washer.Mode]).name
 
     @property
     def fan_speed_list(self):
-        return [e.name for e in Washer_Mode]
+        return [e.name for e in self.Washer_Mode]
 
     async def async_set_fan_speed(self, fan_speed, **kwargs):
-        await self.async_control(Washer.Mode, self.fan_speed_list.index(fan_speed) + 1, '设定' + fan_speed + '模式')
+        await self.async_control(self.Washer.Mode, self.fan_speed_list.index(fan_speed) + 1, '设定' + fan_speed + '模式')
 
     async def async_start(self):
-        if self.data[Washer.Status] == Washer_Status.繁忙:
-            lock = not self.data[Physical_Control_Locked.Physical_Control_Locked]
-            return await self.async_control(Physical_Control_Locked.Physical_Control_Locked, lock, '锁定' if lock else '解锁')
+        if self.data[self.Washer.Status] == self.Washer_Status.繁忙:
+            lock = not self.data[self.Physical_Control_Locked.Physical_Control_Locked]
+            return await self.async_control(self.Physical_Control_Locked.Physical_Control_Locked, lock, '锁定' if lock else '解锁')
         if not self.is_on:
             await self.async_turn_on()
             await sleep(1)
-        await self.async_control(Washer._Start_Wash, [self.data[Washer.Mode]], '启动', self.action_success)
+        await self.async_control(self.Washer._Start_Wash, [self.data[self.Washer.Mode]], '启动', self.action_success)
 
     async def async_pause(self):
-        if self.data[Washer.Status] == Washer_Status.繁忙:
-            await self.async_control(Washer._Pause, [self.data[Washer.Mode]], '暂停', self.action_success)
+        if self.data[self.Washer.Status] == self.Washer_Status.繁忙:
+            await self.async_control(self.Washer._Pause, [self.data[self.Washer.Mode]], '暂停', self.action_success)
         else:
             await self.async_update_status('非工作状态，无法暂停')
 
     def action_success(self, iid, value):
-        self.data[Washer.Status] = (Washer_Status.繁忙, Washer_Status.暂停)[iid == Washer._Start_Wash]
+        self.data[self.Washer.Status] = (self.Washer_Status.繁忙, self.Washer_Status.暂停)[iid == self.Washer._Start_Wash]
 
     async def async_stop(self, **kwargs):
-        if self.data[Washer.Status] == Washer_Status.关机:
+        if self.data[self.Washer.Status] == self.Washer_Status.关机:
             await self.async_update_status('已经是关机状态')
         else:
             await self.async_turn_off()
@@ -135,7 +139,7 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
         if not self.is_on:
             await self.async_turn_on()
             await sleep(1)
-        await self.async_dry_mode(0 if self.data[Washer.Drying_Time] else 1)
+        await self.async_dry_mode(0 if self.data[self.Washer.Drying_Time] else 1)
 
     async def async_locate(self, **kwargs):
         if not self.is_on:
@@ -144,7 +148,7 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
         await self.async_appoint()
 
     async def async_dry_mode(self, mode=1):
-        await self.async_control(Washer.Drying_Time, Washer_Drying_Time.智能烘干 if mode == 1 else mode, ('设定' if mode else '取消') + '烘干模式')
+        await self.async_control(self.Washer.Drying_Time, self.Washer_Drying_Time.智能烘干 if mode == 1 else mode, ('设定' if mode else '取消') + '烘干模式')
 
     async def async_appoint(self, atime=DEFAULT_APPOINT_TIME):
         now = datetime.now()
@@ -160,4 +164,4 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
         else:
             status = '预约%s小时后完成洗衣' % atime
             stamp = now.timestamp() + atime * 60 * 60 * 1000
-        await (self.async_control(Custom.Appoint_Time, int(stamp), status) if atime else self.async_start())
+        await (self.async_control(self.Custom.Appoint_Time, int(stamp), status) if atime else self.async_start())

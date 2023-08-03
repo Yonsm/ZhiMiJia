@@ -7,7 +7,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(ZHIMI_SCHEMA)
 
 
 def setup_platform(hass, conf, add_entities, discovery_info=None):
-    model = conf.get('model', 'viomi.washer.v13').replace('.', '_')
-    module = import_module('.vacuum_' + model, __package__)
+    model = conf.get('model', 'viomi.washer.v13')
+    module = import_module('.' + '_'.join(model.split('.')[0:-1]), __package__)
     ZhiMiVacuum = getattr(module, 'ZhiMiVacuum')
-    add_entities([ZhiMiVacuum(hass, conf)], True)
+    add_entities([ZhiMiVacuum(hass, conf, model)], True)
