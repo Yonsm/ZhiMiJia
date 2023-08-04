@@ -50,7 +50,7 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
 
     async def async_update_status(self, status):
         self._status = status
-        await self.async_update_ha_state()
+        await self.async_update_ha_state(True)
 
     @property
     def is_on(self):
