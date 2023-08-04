@@ -21,6 +21,7 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
             if not x.startswith('_') and x != 'Enum':
                 setattr(self, x, getattr(module, x))
         super().__init__(hass, self.ALL_SVCS, conf, 'mdi:washing-machine')
+        self.model = model
 
     async def async_poll(self):
         data = await super().async_poll()
@@ -152,16 +153,29 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
 
     async def async_appoint(self, atime=DEFAULT_APPOINT_TIME):
         now = datetime.now()
+        now_stamp = now.timestamp()
         if atime < 0:
-            now_stamp = now.timestamp()
             aclock = -atime
-            if now.hour > aclock:
-                now += timedelta(days=1)
             status = '预约%s点钟完成洗衣' % aclock
-            stamp = datetime(now.year, now.month, now.day, aclock).timestamp()
-            if (stamp - now_stamp) / 3600 > 12:
-                atime = 0
+            hour = now.hour
+            if self.model == 'viomi.washer.v13':
+                if hour > aclock:
+                    now += timedelta(days=1)
+                stamp = datetime(now.year, now.month, now.day, aclock).timestamp()
+                if (stamp - now_stamp) / 3600 > 12:
+                    atime = 0
+            else:
+                if now.minute > 10:
+                    hour += 1
+                if hour <= aclock - APPOINT_MIN:
+                    stamp = aclock - hour
+                elif hour >= aclock + 24 - APPOINT_MAX:
+                    stamp = aclock + 24 - hour
+                else:
+                    stamp = 0
+                if stamp > 12:
+                    atime = 0
         else:
             status = '预约%s小时后完成洗衣' % atime
-            stamp = now.timestamp() + atime * 60 * 60 * 1000
+            stamp = (now_stamp + atime * 60 * 60 * 1000) if self.model == 'viomi.washer.v13' else atime
         await (self.async_control(self.Custom.Appoint_Time, int(stamp), status) if atime else self.async_start())
