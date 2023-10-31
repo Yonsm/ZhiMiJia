@@ -1,6 +1,6 @@
 from ..zhimi.entity import ZhiMiEntity
 from asyncio import sleep
-from homeassistant.components.vacuum import SUPPORT_CLEAN_SPOT, SUPPORT_FAN_SPEED, SUPPORT_LOCATE, SUPPORT_PAUSE, SUPPORT_RETURN_HOME, SUPPORT_SEND_COMMAND, SUPPORT_START, SUPPORT_STATUS, SUPPORT_STOP, SUPPORT_TURN_OFF, SUPPORT_TURN_ON, VacuumEntity
+from homeassistant.components.vacuum import SUPPORT_CLEAN_SPOT, SUPPORT_FAN_SPEED, SUPPORT_LOCATE, SUPPORT_PAUSE, SUPPORT_RETURN_HOME, SUPPORT_SEND_COMMAND, SUPPORT_START, SUPPORT_STATUS, SUPPORT_STOP, SUPPORT_TURN_OFF, SUPPORT_TURN_ON, StateVacuumEntity
 from datetime import datetime, timedelta
 import logging
 
@@ -12,7 +12,7 @@ APPOINT_MAX = 23  # 19 in app default
 DEFAULT_APPOINT_TIME = -8  # -8 means 8 o'clock, 8 means 8 hours later
 
 
-class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
+class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
 
     def __init__(self, hass, conf, model):
         from importlib import import_module
@@ -131,9 +131,8 @@ class ZhiMiVacuum(ZhiMiEntity, VacuumEntity):
                     continue
                 elif code == False:
                     return
-            else:
+            elif cmd != 'sleep':
                 _LOGGER.error("Invalid item: %s", item)
-                continue
             await sleep(1)
 
     async def async_clean_spot(self, **kwargs):
