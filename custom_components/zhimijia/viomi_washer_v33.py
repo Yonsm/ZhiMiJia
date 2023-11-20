@@ -42,7 +42,7 @@ class Custom(tuple, Enum):
 
 
 class Washer_Status(int, Enum):
-    关机 = 0
+    docked = 0
     待机 = 1
     状态2 = 2
     状态3 = 3

@@ -28,7 +28,7 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
         self._attr_state = self.Washer_Status(data[self.Washer.Status]).name
         if data[self.Washer.Status] == self.Washer_Status.暂停:
             self._attr_state += '｜暂停'
-        if data[self.Washer.Status] != self.Washer_Status.关机:
+        if data[self.Washer.Status] != self.Washer_Status.docked:
             left_time = data[self.Washer.Left_Time]
             if left_time:
                 self._attr_state += '｜剩%s分钟' % left_time
@@ -50,13 +50,13 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
 
     @property
     def is_on(self):
-        return self.data[self.Washer.Status] != self.Washer_Status.关机
+        return self.data[self.Washer.Status] != self.Washer_Status.docked
 
     async def async_turn_on(self, **kwargs):
         if self.data[self.Washer.Status] == self.Washer_Status.待机:
             await self.async_update_state('已是待机状态')
         else:
-            if self.data[self.Washer.Status] != self.Washer_Status.关机:
+            if self.data[self.Washer.Status] != self.Washer_Status.docked:
                 await self.async_turn_off()
                 await sleep(1)
 
@@ -66,7 +66,7 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
 
     async def async_turn_off(self, **kwargs):
         def success(iid, value):
-            self.data[self.Washer.Status] = self.Washer_Status.关机
+            self.data[self.Washer.Status] = self.Washer_Status.docked
         await self.async_control(self.Washer.Switch_Status, False, '关机', success, True)
 
     @property
@@ -99,7 +99,7 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
         self.data[self.Washer.Status] = (self.Washer_Status.繁忙, self.Washer_Status.暂停)[iid == self.Washer._Start_Wash]
 
     async def async_stop(self, **kwargs):
-        if self.data[self.Washer.Status] == self.Washer_Status.关机:
+        if self.data[self.Washer.Status] == self.Washer_Status.docked:
             await self.async_update_state('已经是关机状态')
         else:
             await self.async_turn_off()
