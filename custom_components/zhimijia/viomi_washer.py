@@ -34,19 +34,21 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
                 self._attr_state += '｜剩%s分钟' % left_time
             drying_time = data[self.Washer.Drying_Time]
             if drying_time:
-                self._attr_state += '|' + self.Washer_Drying_Time(drying_time).name
+                self._attr_state += '|' + \
+                    self.Washer_Drying_Time(drying_time).name
             appoint_time = data[self.Custom.Appoint_Time]
             if appoint_time:
-                self._attr_state += '｜预约%s' % datetime.fromtimestamp(appoint_time).strftime('%H:%M')
+                self._attr_state += '｜预约%s' % datetime.fromtimestamp(
+                    appoint_time).strftime('%H:%M')
         return data
 
     @property
     def supported_features(self):
         return SUPPORT_STATUS | SUPPORT_TURN_ON | SUPPORT_TURN_OFF | SUPPORT_FAN_SPEED | SUPPORT_START | SUPPORT_PAUSE | SUPPORT_STOP | SUPPORT_RETURN_HOME | SUPPORT_SEND_COMMAND | SUPPORT_CLEAN_SPOT | SUPPORT_LOCATE
 
-    async def async_update_state(self, state):
-        self._attr_state = state
-        await self.async_update_ha_state(True)
+    async def async_update_status(self, status):
+        self._attr_state = status
+        await super().async_update_status(status)
 
     @property
     def is_on(self):
@@ -54,7 +56,7 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
 
     async def async_turn_on(self, **kwargs):
         if self.data[self.Washer.Status] == self.Washer_Status.待机:
-            await self.async_update_state('已是待机状态')
+            await self.async_update_status('已是待机状态')
         else:
             if self.data[self.Washer.Status] != self.Washer_Status.docked:
                 await self.async_turn_off()
@@ -62,11 +64,15 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
 
             def success(iid, value):
                 self.data[self.Washer.Status] = self.Washer_Status.待机
+                self._attr_state = '待机'
+                self.async_write_ha_state()
             await self.async_control(self.Washer.Switch_Status, True, '开机', success, True)
 
     async def async_turn_off(self, **kwargs):
         def success(iid, value):
             self.data[self.Washer.Status] = self.Washer_Status.docked
+            self._attr_state = 'docked'
+            self.async_write_ha_state()
         await self.async_control(self.Washer.Switch_Status, False, '关机', success, True)
 
     @property
@@ -93,14 +99,15 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
         if self.data[self.Washer.Status] == self.Washer_Status.繁忙:
             await self.async_control(self.Washer._Pause, [self.data[self.Washer.Mode]], '暂停', self.action_success)
         else:
-            await self.async_update_state('非工作状态，无法暂停')
+            await self.async_update_status('非工作状态，无法暂停')
 
     def action_success(self, iid, value):
-        self.data[self.Washer.Status] = (self.Washer_Status.繁忙, self.Washer_Status.暂停)[iid == self.Washer._Start_Wash]
+        self.data[self.Washer.Status] = (self.Washer_Status.繁忙, self.Washer_Status.暂停)[
+            iid == self.Washer._Start_Wash]
 
     async def async_stop(self, **kwargs):
         if self.data[self.Washer.Status] == self.Washer_Status.docked:
-            await self.async_update_state('已经是关机状态')
+            await self.async_update_status('已经是关机状态')
         else:
             await self.async_turn_off()
 
@@ -113,7 +120,8 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
             count = len(parts)
             cmd = parts[0]
             if count > 1:
-                value = parts[1][1:] if parts[1].startswith('$') else int(parts[1])
+                value = parts[1][1:] if parts[1].startswith(
+                    '$') else int(parts[1])
             async_cmd = 'async_' + cmd
             if hasattr(self, async_cmd):
                 # turn_on/turn_off,start/pause/stop/return_to_base,locate/clean_spot
@@ -156,7 +164,8 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
             if self.model == 'viomi.washer.v13':
                 if hour > aclock:
                     now += timedelta(days=1)
-                stamp = datetime(now.year, now.month, now.day, aclock).timestamp()
+                stamp = datetime(now.year, now.month,
+                                 now.day, aclock).timestamp()
                 if (stamp - now_stamp) / 3600 > 12:
                     atime = 0
             else:
@@ -172,5 +181,6 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
                     atime = 0
         else:
             status = '预约%s小时后完成洗衣' % atime
-            stamp = (now_stamp + atime * 60 * 60 * 1000) if self.model == 'viomi.washer.v13' else atime
+            stamp = (now_stamp + atime * 60 * 60 *
+                     1000) if self.model == 'viomi.washer.v13' else atime
         await (self.async_control(self.Custom.Appoint_Time, int(stamp), status) if atime else self.async_start())
