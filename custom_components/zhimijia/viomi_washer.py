@@ -1,6 +1,6 @@
 from ..zhimi.entity import ZhiMiEntity
 from asyncio import sleep
-from homeassistant.components.vacuum import SUPPORT_CLEAN_SPOT, SUPPORT_FAN_SPEED, SUPPORT_LOCATE, SUPPORT_PAUSE, SUPPORT_RETURN_HOME, SUPPORT_SEND_COMMAND, SUPPORT_START, SUPPORT_STATUS, SUPPORT_STOP, SUPPORT_TURN_OFF, SUPPORT_TURN_ON, StateVacuumEntity
+from homeassistant.components.vacuum import VacuumEntityFeature, StateVacuumEntity
 from datetime import datetime, timedelta
 import logging
 
@@ -22,6 +22,7 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
                 setattr(self, x, getattr(module, x))
         super().__init__(hass, self.ALL_SVCS, conf, 'mdi:washing-machine')
         self.model = model
+        self._attr_supported_features =   VacuumEntityFeature.STATUS | VacuumEntityFeature.TURN_ON | VacuumEntityFeature.TURN_OFF | VacuumEntityFeature.FAN_SPEED | VacuumEntityFeature.START | VacuumEntityFeature.PAUSE | VacuumEntityFeature.STOP | VacuumEntityFeature.RETURN_HOME | VacuumEntityFeature.SEND_COMMAND | VacuumEntityFeature.CLEAN_SPOT | VacuumEntityFeature.LOCATE
 
     async def async_poll(self):
         data = await super().async_poll()
@@ -41,10 +42,6 @@ class ZhiMiVacuum(ZhiMiEntity, StateVacuumEntity):
                 self._attr_state += '｜预约%s' % datetime.fromtimestamp(
                     appoint_time).strftime('%H:%M')
         return data
-
-    @property
-    def supported_features(self):
-        return SUPPORT_STATUS | SUPPORT_TURN_ON | SUPPORT_TURN_OFF | SUPPORT_FAN_SPEED | SUPPORT_START | SUPPORT_PAUSE | SUPPORT_STOP | SUPPORT_RETURN_HOME | SUPPORT_SEND_COMMAND | SUPPORT_CLEAN_SPOT | SUPPORT_LOCATE
 
     async def async_update_status(self, status):
         self._attr_state = status

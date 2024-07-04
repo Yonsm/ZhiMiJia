@@ -1,8 +1,7 @@
 #from .zhimi_fan_v3 import *
 from ..zhimi.entity import ZhiMiEntity, ZHIMI_SCHEMA
-from homeassistant.components.fan import FanEntity, PLATFORM_SCHEMA, DIRECTION_REVERSE, DIRECTION_FORWARD, SUPPORT_SET_SPEED, SUPPORT_PRESET_MODE, SUPPORT_DIRECTION, SUPPORT_OSCILLATE
+from homeassistant.components.fan import FanEntity, PLATFORM_SCHEMA, DIRECTION_REVERSE, DIRECTION_FORWARD, FanEntityFeature
 from homeassistant.const import STATE_OFF, STATE_ON
-
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(ZHIMI_SCHEMA)
 
@@ -19,7 +18,7 @@ ALL_MODES = {
 }
 
 
-async def async_setup_platform(hass, conf, async_add_entities, discovery_info=None):
+def setup_platform(hass, conf, add_entities, discovery_info=None):
     model = conf.get('model', 'zhimi.fan')
     if model in ALL_PROPS:
         entity = ZhiMiIOFan(hass, ALL_PROPS[model], conf)
@@ -29,7 +28,7 @@ async def async_setup_platform(hass, conf, async_add_entities, discovery_info=No
         module = import_module('.' + model.replace('.', '_'), __package__)
         globals().update({x: getattr(module, x) for x in module.__dict__ if not x.startswith('_')})
         entity = ZhiMIoTFan(hass, ALL_SVCS, conf)
-    async_add_entities([entity], True)
+    add_entities([entity], True)
 
 
 class ZhiMIoTFan(ZhiMiEntity, FanEntity):
@@ -38,13 +37,13 @@ class ZhiMIoTFan(ZhiMiEntity, FanEntity):
     def supported_features(self):
         features = 0
         # if hasattr(Fan, 'Speed'):
-        #     features |= SUPPORT_SET_SPEED
+        #     features |= FanEntityFeature.SET_SPEED
         if hasattr(Fan, 'Level'):
-            features |= SUPPORT_PRESET_MODE
+            features |= FanEntityFeature.PRESET_MODE
         if hasattr(Fan, 'Horizontal_Swing'):
-            features |= SUPPORT_OSCILLATE
+            features |= FanEntityFeature.OSCILLATE
         if hasattr(Fan_Mode, 'Natural_Wind'):
-            features |= SUPPORT_DIRECTION
+            features |= FanEntityFeature.DIRECTION
         return features
 
     @property
@@ -89,13 +88,13 @@ class ZhiMiIOFan(ZhiMiEntity, FanEntity):
     def supported_features(self):
         features = 0
         if 'speed_level' in self.props or 'favorite_level' in self.props:
-            features |= SUPPORT_SET_SPEED
+            features |= FanEntityFeature.SET_SPEED
         if 'mode' in self.props or 'speed_level' in self.props:
-            features |= SUPPORT_PRESET_MODE
+            features |= FanEntityFeature.PRESET_MODE
         if 'angle' in self.props or 'led_level' in self.props:
-            features |= SUPPORT_OSCILLATE
+            features |= FanEntityFeature.OSCILLATE
         if 'natural_level' in self.props:
-            features |= SUPPORT_DIRECTION
+            features |= FanEntityFeature.DIRECTION
         return features
 
     @property

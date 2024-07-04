@@ -1,5 +1,5 @@
 
-from homeassistant.components.light import LightEntity, PLATFORM_SCHEMA, ATTR_BRIGHTNESS, SUPPORT_BRIGHTNESS
+from homeassistant.components.light import LightEntity, PLATFORM_SCHEMA, ATTR_BRIGHTNESS, ColorMode
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 
@@ -24,6 +24,9 @@ async def async_setup_platform(hass, conf, async_add_entities, discovery_info=No
 
 class ZhiMiLight(ZhiMiEntity, LightEntity):
 
+    _attr_color_mode = ColorMode.ONOFF
+    _attr_supported_color_modes = {ColorMode.ONOFF}        
+
     def __init__(self, hass, conf):
         self.power_prop = conf['power_prop']
         self.brightness_prop = conf.get('brightness_prop')
@@ -33,11 +36,8 @@ class ZhiMiLight(ZhiMiEntity, LightEntity):
         props = [self.power_prop]
         if self.brightness_prop is not None:
             props.append(self.brightness_prop)
+            #self._attr_supported_color_modes = {ColorMode.ONOFF, ColorMode.BRIGHTNESS}
         super().__init__(hass, props, conf)
-
-    @property
-    def supported_features(self):
-        return SUPPORT_BRIGHTNESS if self.brightness_prop is not None else 0
 
     @property
     def brightness(self):
